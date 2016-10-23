@@ -3,6 +3,7 @@ import math
 import numpy as np
 
 import utils
+from train import action_select
 
 N_STATES = math.pow(3, 9) #number of states
 N_ACTIONS = 9 # number of actions
@@ -45,11 +46,15 @@ def train_montecarlo(iteration_num, episode_num, options):
 
                 elif options.pmode == 2:
                     # softmax
+                    # TODO implementation softmax
 
+            action, reward, state3, fin = action_select(policy, t, state3)
 
+            # TODO 状態、行動、報酬、出現回数の更新
 
+            # TODO ゲームが終了したら割引率を考慮した報酬和（収益）を計算
 
-
+            
 
 
 
