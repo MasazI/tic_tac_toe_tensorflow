@@ -22,6 +22,12 @@ def train_montecarlo(iteration_num, episode_num, options):
         visits = np.ones((N_STATES, N_ACTIONS))
         results = np.zeros([episode_num, 1])
 
+        states = np.empty([episode_num, T])
+        actions = np.empty([episode_num, T])
+        rewards = np.empty([episode_num, T])
+        drewards = np.empty([episode_num, T])
+
+        # TステップのエピソードをM回シュミレーション
         for m in xrange(episode_num):
             # 状態の初期化
             state3 = np.zeros([N_ACTIONS])
@@ -47,14 +53,37 @@ def train_montecarlo(iteration_num, episode_num, options):
                 elif options.pmode == 2:
                     # softmax
                     # TODO implementation softmax
+                    pass
 
-            action, reward, state3, fin = action_select(policy, t, state3)
+                action, reward, state3, fin = action_select(policy, t, state3)
 
-            # TODO 状態、行動、報酬、出現回数の更新
+                # 状態、行動、報酬、出現回数の更新
+                states[m, t] = state
+                actions[m, t] = action
+                rewards[m, t] = reward
+                visits[state, action] += 1
 
-            # TODO ゲームが終了したら割引率を考慮した報酬和（収益）を計算
+                # ゲームが終了したら割引率を考慮した報酬和（収益）を計算
+                if fin > 0:
+                    results[m] = fin
+                    drewards[m, t] = rewards[m, t]
+                    for pstep in reversed(xrange(t)):
+                        drewards[m, pstep] = options.discount_factor * drewards[m, pstep + 1]
+                    break
 
-            
+        # 状態行動価値関数の更新
+        Q = np.zeros([N_STATES, N_ACTIONS])
+        for m in xrange(episode_num):
+            for t in xrange(states.shape[1]):
+                s = states[m, t]
+                a = actions[m, t]
+                if s == 0:
+                    break
+                Q[s, a] += drewards[m, t]
+        Q = Q / visits
+
+        # TODO 勝率計算
+
 
 
 
