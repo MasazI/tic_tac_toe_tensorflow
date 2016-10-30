@@ -2,8 +2,19 @@
 import math
 import numpy as np
 
+FIN_STATE = (
+    (0,1,2),
+    (3,4,5),
+    (6,7,8),
+    (0,3,6),
+    (1,4,7),
+    (2,5,8),
+    (0,4,8),
+    (2,4,6),
+)
 
-class options:
+
+class Options:
     def __init__(self, discount_factor, temperature, epsilon, pmode):
         # 割引率
         self.discount_factor = discount_factor
@@ -13,6 +24,38 @@ class options:
         self.epsilon = epsilon
         # 政策改善のmode 0:決定的な政策改善、1:ε-greedy、2: softmax
         self.pmode = pmode
+
+
+def game_check_state3(state3):
+    '''
+    ゲームが終了している状態かどうかの判定
+    :param state3: 状態（ベクトル）
+    :return: 0:続行 1:plyaer1の勝ち 2:player3の勝ち 3:引き分け
+    '''
+    for position in FIN_STATE:
+        state_pos0 = state3[position[0]]
+        state_pos1 = state3[position[1]]
+        state_pos2 = state3[position[2]]
+
+        # player 1 の勝ち
+        if state_pos0 == 1 and state_pos1 == 1 and state_pos2 == 1:
+            fin = 1
+            return fin
+
+        # player 2 の勝ち
+        elif state_pos0 == 2 and state_pos1 == 2 and state_pos2 == 2:
+            fin = 2
+            return fin
+
+    # 勝負がついていない
+    for i in state3:
+        if i == 0:
+            fin = 0
+            return fin
+
+    # 空いたマスが無いかつプレイヤーの勝敗がつかない
+    fin = 3
+    return fin
 
 
 def encoding_state(state3):
@@ -54,7 +97,8 @@ def encoding_state(state3):
     candidates = []
     for i in xrange(len(convert)):
         candidates.append(np.dot([state3[convert[i][j]] for j in range(len(convert[i]))], power))
-    return min(candidates)
+    state = int(min(candidates))
+    return state
 
 
 if __name__ == '__main__':

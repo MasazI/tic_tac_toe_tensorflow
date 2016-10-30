@@ -3,11 +3,12 @@ import math
 import numpy as np
 
 import utils
-from train import action_select
+from utils import Options
+from tic_tac_toe import TicTacToe
 
-N_STATES = math.pow(3, 9) #number of states
+N_STATES = int(math.pow(3, 9)) #number of states
 N_ACTIONS = 9 # number of actions
-T = 5 # ax step number
+T = 5 # max step number
 
 def train_montecarlo(iteration_num, episode_num, options):
     '''
@@ -16,81 +17,48 @@ def train_montecarlo(iteration_num, episode_num, options):
     :param options: optionsオブジェクト
     :return:
     '''
-    q = np.zero((N_STATES, N_ACTIONS))
-
+    tictactoe = TicTacToe(N_STATES, N_ACTIONS, episode_num, T, options)
     for l in xrange(iteration_num):
-        visits = np.ones((N_STATES, N_ACTIONS))
-        results = np.zeros([episode_num, 1])
+        print("iteration No.%d" % (l))
+        tictactoe.initial_iteration()
 
-        states = np.empty([episode_num, T])
-        actions = np.empty([episode_num, T])
-        rewards = np.empty([episode_num, T])
-        drewards = np.empty([episode_num, T])
-
-        # TステップのエピソードをM回シュミレーション
+        # TステップのエピソードをM回シュミレーション(標本集合)
         for m in xrange(episode_num):
             # 状態の初期化
-            state3 = np.zeros([N_ACTIONS])
+            state3 = tictactoe.initial_episode()
 
             for t in xrange(T):
                 # 状態のエンコード
                 state = utils.encoding_state(state3)
 
-                # 政策の初期化
-                policy = np.zeros([N_ACTIONS])
+                # 状態におけるポリシーを取得
+                policy = tictactoe.get_policy(state)
 
-                if options.pmode == 0:
-                    # greedy
-                    max_action = np.argmax(q[state])
-                    policy[max_action] = 1.0
-
-                elif options.pmode == 1:
-                    # ε-greedy
-                    max_action = np.argmax(q[state])
-                    policy = np.ones([N_ACTIONS]) * options.epsilon / N_ACTIONS
-                    policy[max_action] = 1 - options.epsilon + options.epsilon / N_ACTIONS
-
-                elif options.pmode == 2:
-                    # softmax
-                    # TODO implementation softmax
-                    pass
-
-                action, reward, state3, fin = action_select(policy, t, state3)
+                # 行動の選択と実行、実行後の状態ベクトルと報酬
+                action, reward, state3, fin = tictactoe.action_select(t, state3, policy)
 
                 # 状態、行動、報酬、出現回数の更新
-                states[m, t] = state
-                actions[m, t] = action
-                rewards[m, t] = reward
-                visits[state, action] += 1
+                tictactoe.update_episodes_by_step(m, t, state, action, reward)
 
                 # ゲームが終了したら割引率を考慮した報酬和（収益）を計算
                 if fin > 0:
-                    results[m] = fin
-                    drewards[m, t] = rewards[m, t]
-                    for pstep in reversed(xrange(t)):
-                        drewards[m, pstep] = options.discount_factor * drewards[m, pstep + 1]
+                    tictactoe.finish_episode(fin, m, t)
                     break
 
         # 状態行動価値関数の更新
-        Q = np.zeros([N_STATES, N_ACTIONS])
-        for m in xrange(episode_num):
-            for t in xrange(states.shape[1]):
-                s = states[m, t]
-                a = actions[m, t]
-                if s == 0:
-                    break
-                Q[s, a] += drewards[m, t]
-        Q = Q / visits
+        tictactoe.update_value_function()
 
-        # TODO 勝率計算
+        # 政策の改善
+        tictactoe.update_policy_improvement()
 
-
-
+        # 勝率計算
+        print tictactoe.get_win_rate()
 
 
 def main():
-    train_montecarlo()
+    options = Options(0.9, 0, 0.1, 1)
+    train_montecarlo(30, 1000, options)
 
 
-def __name__ == '__main__':
+if __name__ == '__main__':
     main()
