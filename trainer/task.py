@@ -27,6 +27,9 @@ def train_montecarlo(iteration_num, episode_num, options):
             # 状態の初期化
             state3 = tictactoe.initial_episode()
 
+            if m % 500 == 0:
+                print("episode No.%d" % m)
+
             for t in xrange(T):
                 # 状態のエンコード
                 state = utils.encoding_state(state3)
@@ -35,7 +38,12 @@ def train_montecarlo(iteration_num, episode_num, options):
                 policy = tictactoe.get_policy(state)
 
                 # 行動の選択と実行、実行後の状態ベクトルと報酬
-                action, reward, state3, fin = tictactoe.action_select(t, state3, policy)
+                if m % 500 == 0:
+                    verbose = True
+                else:
+                    verbose = False
+
+                action, reward, state3, fin = tictactoe.action_select(t, state3, policy, verbose)
 
                 # 状態、行動、報酬、出現回数の更新
                 tictactoe.update_episodes_by_step(m, t, state, action, reward)

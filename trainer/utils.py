@@ -13,6 +13,12 @@ FIN_STATE = (
     (2,4,6),
 )
 
+BOARD = (
+    (0, 1, 2),
+    (3, 4, 5),
+    (6, 7, 8),
+)
+
 
 class Options:
     def __init__(self, discount_factor, temperature, epsilon, pmode):
@@ -58,9 +64,33 @@ def game_check_state3(state3):
     return fin
 
 
+def print_state3(state3):
+    '''
+    state3の盤面出力
+    0 -> .
+    1 -> o
+    2 -> x
+    :param state3:
+    :return:
+    '''
+    for line in BOARD:
+        print "-" * 11
+        line_str = ""
+        for i in line:
+            if state3[i] == 0:
+                line_str += " . "
+            elif state3[i] == 1:
+                line_str += " o "
+            elif state3[i] == 2:
+                line_str+= " x "
+            line_str+= "|"
+        print line_str
+    print "-" * 11
+    print "=" * 20
+
 def encoding_state(state3):
     '''
-    encoding: 0:空, 1：◯、2：☓
+    encoding: 0:空, 1：◯ (AI)、2：☓ (Player)
 
     example)
     1,0,0,0,0,0,0,2 = ◯空空空空空空空☓ -> 1 * 3_0 + 0 * 3_1 + ... + 2 * 3_8

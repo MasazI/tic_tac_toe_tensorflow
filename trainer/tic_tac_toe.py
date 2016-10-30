@@ -135,6 +135,7 @@ class TicTacToe():
             # ε-greedy
             max_action = np.argmax(q[state])
 
+            # 最大のアクションのみ大きな確率を設定
             policy = np.ones([self.n_actions]) * options.epsilon / float(self.n_actions)
             policy[max_action] = 1 - options.epsilon + options.epsilon / float(self.n_actions)
 
@@ -165,7 +166,7 @@ class TicTacToe():
 
         return t.sum() / float(self.n_episodes)
 
-    def action_select(self, i_step, state3, policy):
+    def action_select(self, i_step, state3, policy, verbose=False):
         '''
         現在の政策と状態をもとにゲームを進める
         :param i_step: 現在のステップ数
@@ -182,11 +183,19 @@ class TicTacToe():
             a = random.choice(action_list)
         else:
             # 政策に従って行動を選択（random要素を追加）
+            if verbose:
+                utils.print_state3(state3)
+
+            if verbose:
+                print policy
+
             while(True):
                 a = np.argmax(policy)
 
                 # 1割はrandomにチョイスする
-                if random.random() < 0.1:
+                if random.random() < 0.05:
+                    if verbose:
+                        print("random choice!!")
                     np.where(state3==0)[0]
                     a = random.choice(action_list)
 
@@ -196,6 +205,13 @@ class TicTacToe():
         # 自分の行動
         action = a
         state3[a] = 2
+
+        if verbose:
+            print("my action: %d" % (action))
+            utils.print_state3(state3)
+
+        if verbose:
+            utils.print_state3(state3)
 
         # 勝負がついたか確認
         fin = game_check_state3(state3)
@@ -222,11 +238,17 @@ class TicTacToe():
                 # リーチである
                 reach = 1
                 # 空いているマスのインデックスを使う
-                a2 = np.where(position_state == 0)[0][0]
-
+                a2 = position[np.where(position_state == 0)[0][0]]
+                if verbose:
+                    print("reach")
+                    print position
+                    print np.where(position_state == 0)
+                    print a2
                 break
 
         if reach == 0:
+            if verbose:
+                print("not reach")
             # リーチではない場合
             while(True):
                 # ランダムにチョイス
@@ -236,6 +258,10 @@ class TicTacToe():
                 if state3[a2] == 0:
                     break
         state3[a2] = 1
+
+        if verbose:
+            utils.print_state3(state3)
+
 
         fin = game_check_state3(state3)
         if fin == 1:
