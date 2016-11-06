@@ -19,7 +19,7 @@ class TicTacToe():
         self.n_episodes = n_episodes
         self.n_steps = n_steps
 
-        # Q関数の初期化
+        # Q関数の初期化(ndarray)
         self.q = np.zeros((n_states, n_actions))
         # ポリシーの初期化
         self.policy = np.zeros([self.n_states, self.n_actions])
@@ -143,8 +143,8 @@ class TicTacToe():
 
         elif options.pmode == 2:
             # softmax
-            # TODO implementation softmax
-            pass
+            self.policy[state] = np.exp(q[state]/options.temprature) / np.sum(np.exp(q[state]/options.temprature))
+
 
     def get_policy(self, state):
         '''
@@ -177,7 +177,7 @@ class TicTacToe():
 
         action_list = np.array([i for i in xrange(self.n_actions)])
 
-        # プレイヤー2 ###########################################
+        # プレイヤー2 ########################################### （強化学習するPlayer）
         if i_step == 0:
             # 初期はActionリストからランダムにチョイスする
             a = random.choice(action_list)
@@ -190,14 +190,29 @@ class TicTacToe():
                 print policy
 
             while(True):
-                a = np.argmax(policy)
+                valid_action_list = np.where(state3 == 0)[0]
+
+                # 選択不可能な行動に0を設定して選択の順位を調整する
+                valid_policy = np.array([])
+                for i, p in enumerate(policy):
+                    if i in valid_action_list:
+                        valid_policy = np.append(valid_policy, policy[i])
+                    else:
+                        valid_policy = np.append(valid_policy, 0.0)
+
+                if verbose:
+                    print valid_policy
+
+                a = np.argmax(valid_policy)
+
+                # TODO softmaxに合わせた選択
+
 
                 # 1割はrandomにチョイスする
-                if random.random() < 0.05:
+                if random.random() < 0.1:
                     if verbose:
                         print("random choice!!")
-                    np.where(state3==0)[0]
-                    a = random.choice(action_list)
+                    a = random.choice(valid_action_list)
 
                 # マスがあいていれば選択完了
                 if state3[a] == 0:
@@ -216,10 +231,10 @@ class TicTacToe():
         # 勝負がついたか確認
         fin = game_check_state3(state3)
         if fin == 2:
-            reward = 10
+            reward = 10.0
             return action, reward, state3, fin
         elif fin == 3:
-            reward = 0
+            reward = 0.0
             return action, reward, state3, fin
 
         # プレイヤー1 （AI）###########################################
@@ -228,14 +243,14 @@ class TicTacToe():
         for position in utils.FIN_STATE:
             position_state = np.array([state3[i] for i in position])
 
-            # プレイヤー1のマス
+            # プレイヤー1(AI)のマス
             player1_num= len(np.where(position_state == 1)[0])
 
             # 0 （空いているマス）を数える
             empty_num = len(np.where(position_state == 0)[0])
 
             if player1_num == 2 and empty_num == 1:
-                # リーチである
+                # AIがリーチである
                 reach = 1
                 # 空いているマスのインデックスを使う
                 a2 = position[np.where(position_state == 0)[0][0]]
@@ -265,11 +280,11 @@ class TicTacToe():
 
         fin = game_check_state3(state3)
         if fin == 1:
-            reward = -10
+            reward = -10.0
             return action, reward, state3, fin
         elif fin == 3:
-            reward = 0
+            reward = 0.0
             return action, reward, state3, fin
 
-        reward = 0
+        reward = 0.0
         return action, reward, state3, fin
