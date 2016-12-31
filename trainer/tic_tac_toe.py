@@ -1,290 +1,94 @@
-#encoding: utf-8
-import numpy as np
-import random
-import utils
-from utils import game_check_state3
+# encoding: utf-8
+'''
+tic tac toe 手動ゲーム対戦
+'''
+import sys
 
-class TicTacToe():
-    def __init__(self, n_states, n_actions, n_episodes, n_steps, options):
-        '''
-        ゲームの初期化
-        :param n_states:
-        :param n_actions:
-        :param n_episodes:
-        :param n_steps:
-        :param options:
-        '''
-        self.n_states = n_states
-        self.n_actions = n_actions
-        self.n_episodes = n_episodes
-        self.n_steps = n_steps
+from mark import Mark
+from maru_mark import Maru
+from batsu_mark import Batsu
 
-        # Q関数の初期化(ndarray)
-        self.q = np.zeros((n_states, n_actions))
-        # ポリシーの初期化
-        self.policy = np.zeros([self.n_states, self.n_actions])
+from player import Player
+from player_ql import QLearningPlayer
+from tic_tac_toe_game import Game
+from tic_tac_toe_state import State
 
-        self.options = options
-
-    def initial_iteration(self):
-        '''
-        政策反復の初期化
-        :return:
-        '''
-
-        self.visits = np.ones((self.n_states, self.n_actions), dtype=np.int32)
-        self.results = np.zeros([self.n_episodes, 1], dtype=np.int32)
-        self.states = np.zeros([self.n_episodes, self.n_steps], dtype=np.int32)
-        self.states[self.states==0] = -1
-        self.actions = np.empty([self.n_episodes, self.n_steps], dtype=np.int32)
-        self.rewards = np.empty([self.n_episodes, self.n_steps])
-        self.drewards = np.empty([self.n_episodes, self.n_steps])
-
-    def initial_episode(self):
-        '''
-        エピソードの初期化（状態を初期化する）
-        :return:
-        '''
-        # 状態の初期化
-        self.state3 = np.zeros([self.n_actions])
-        return self.state3
-
-    def update_episodes_by_step(self, i_episode, i_step, state, action, reward):
-        '''
-        ステップごとのエピソード情報の更新
-        :param i_episode:
-        :param i_step:
-        :param state:
-        :param action:
-        :param reward:
-        :return:
-        '''
-        self.states[i_episode, i_step] = state
-        self.actions[i_episode, i_step] = action
-        self.rewards[i_episode, i_step] = reward
-        self.visits[state, action] += 1
-
-    def finish_episode(self, fin, i_episode, i_step):
-        '''
-        ゲーム終了時の処理
-
-        :param fin: ゲーム終了フラグ
-        :param i_episode: エピソードインデックス
-        :param i_step: ステップインデックス
-        :return:
-        '''
-        # ゲーム終了の情報
-        self.results[i_episode] = fin
-        # 各ステップの報酬を取得
-        self.drewards[i_episode, i_step] = self.rewards[i_episode, i_step]
-
-        # 割引率を考慮した報酬和（収益）の計算
-        for pstep in reversed(xrange(i_step)):
-            self.drewards[i_episode, pstep] = self.options.discount_factor * \
-                                              self.drewards[i_episode, pstep + 1]
-
-    def update_value_function(self):
-        '''
-        価値観数の更新
-
-        エピソードを遡って、状態と行動の組に対する報酬を計算する
-        :return:
-        '''
-        for m in xrange(self.n_episodes):
-            for t in xrange(self.states.shape[1]):
-                s = self.states[m, t]
-                a = self.actions[m, t]
-
-                if s == -1:
-                    break
-
-                self.q[s, a] += self.drewards[m, t]
-
-        # 状態と行動の訪問数で割る
-        self.q = self.q / self.visits
-
-    def update_policy_improvement(self):
-        '''
-        政策の改善
-        エピソードを遡って、q関数を使って最大の報酬を得たアクションに更新
-        :return:
-        '''
-        for m in xrange(self.n_episodes):
-            for t in xrange(self.states.shape[1]):
-                s = self.states[m, t]
-                if s == -1:
-                    break
-                self.policy_improvement(self.q, s, self.policy[s], self.options)
-
-    def policy_improvement(self, q, state, policy, options):
-        '''
-        政策改善
-        :param q: q function
-        :param state: 状態
-        :param policy: 政策（状態stateにおけるポリシー）
-        :param options: 政策改善オプションクラス
-        :return:
-        '''
-        # 政策の改善（s最初は初期化）
-        if options.pmode == 0:
-            # greedy
-            max_action = np.argmax(q[state])
-            policy[max_action] = 1.0
-
-        elif options.pmode == 1:
-            # ε-greedy
-            max_action = np.argmax(q[state])
-
-            # 最大のアクションのみ大きな確率を設定
-            policy = np.ones([self.n_actions]) * options.epsilon / float(self.n_actions)
-            policy[max_action] = 1 - options.epsilon + options.epsilon / float(self.n_actions)
-
-            self.policy[state] = policy
-
-        elif options.pmode == 2:
-            # softmax
-            self.policy[state] = np.exp(q[state]/options.temprature) / np.sum(np.exp(q[state]/options.temprature))
+from decision_ql import QLearningDecisionPolicy
 
 
-    def get_policy(self, state):
-        '''
-        状態におけるpolicyを返す
-        :param state: 状態
-        :return:
-        '''
-        return self.policy[state]
+def train():
+    state = State()
+    actions = state.get_valid_actions()
+    print("valid actions: %s" % actions)
+    state_array = state.to_array()
+    print("state dim: %d" % len(state_array))
 
-    def get_win_rate(self):
-        '''
-        勝率を取得する
-        勝ちエピソード/エピソード数
-        :return:
-        '''
-        t = self.results.copy()
-        t[self.results != 2] = 0
-        t[self.results == 2] = 1
+    input_dim = len(state_array) + 1
+    policy_1 = QLearningDecisionPolicy(actions, input_dim, "train20161226-002008", "player1")
+    policy_2 = QLearningDecisionPolicy(actions, input_dim, "train20161226-002008", "player2")
 
-        return t.sum() / float(self.n_episodes)
+    com_1 = QLearningPlayer(Mark(Maru()), policy_1, True)
+    com_2 = QLearningPlayer(Mark(Batsu()), policy_2, True)
 
-    def action_select(self, i_step, state3, policy, verbose=False):
-        '''
-        現在の政策と状態をもとにゲームを進める
-        :param i_step: 現在のステップ数
-        :param state3: 現在の状態
-        :param policy: 現在の状態にたいする政策
-        :return: action,reward,state2,fin
-        '''
+    iterations = 1000000
 
-        action_list = np.array([i for i in xrange(self.n_actions)])
+    for i in xrange(iterations):
+        game = Game(com_1, com_2)
+        # print("[%d]" % (i))
+        # print("="*30)
+        game.start(i)
+        if i % 1000 == 0:
+            print("training iterations: No.%d" % (i))
 
-        # プレイヤー2 ########################################### （強化学習するPlayer）
-        if i_step == 0:
-            # 初期はActionリストからランダムにチョイスする
-            a = random.choice(action_list)
+    print("Test playing...")
+    com_1.training = False
+    com_2.training = False
+
+    while (True):
+        print("Select a type of fight [1, 2, 3, q]")
+        print("1: human vs com2")
+        print("2: com1 vs human")
+        print("3: com1 vs com2")
+        print("q: quit")
+
+        type_of_fight = 1
+        input_line = raw_input()
+        if input_line.isdigit():
+            type_of_fight = int(input_line)
         else:
-            # 政策に従って行動を選択（random要素を追加）
-            if verbose:
-                utils.print_state3(state3)
-
-            if verbose:
-                print policy
-
-            while(True):
-                valid_action_list = np.where(state3 == 0)[0]
-
-                # 選択不可能な行動に0を設定して選択の順位を調整する
-                valid_policy = np.array([])
-                for i, p in enumerate(policy):
-                    if i in valid_action_list:
-                        valid_policy = np.append(valid_policy, policy[i])
-                    else:
-                        valid_policy = np.append(valid_policy, 0.0)
-
-                if verbose:
-                    print valid_policy
-
-                a = np.argmax(valid_policy)
-
-                # TODO softmaxに合わせた選択
-
-
-                # 1割はrandomにチョイスする
-                if random.random() < 0.1:
-                    if verbose:
-                        print("random choice!!")
-                    a = random.choice(valid_action_list)
-
-                # マスがあいていれば選択完了
-                if state3[a] == 0:
-                    break
-        # 自分の行動
-        action = a
-        state3[a] = 2
-
-        if verbose:
-            print("my action: %d" % (action))
-            utils.print_state3(state3)
-
-        if verbose:
-            utils.print_state3(state3)
-
-        # 勝負がついたか確認
-        fin = game_check_state3(state3)
-        if fin == 2:
-            reward = 10.0
-            return action, reward, state3, fin
-        elif fin == 3:
-            reward = 0.0
-            return action, reward, state3, fin
-
-        # プレイヤー1 （AI）###########################################
-        reach = 0
-
-        for position in utils.FIN_STATE:
-            position_state = np.array([state3[i] for i in position])
-
-            # プレイヤー1(AI)のマス
-            player1_num= len(np.where(position_state == 1)[0])
-
-            # 0 （空いているマス）を数える
-            empty_num = len(np.where(position_state == 0)[0])
-
-            if player1_num == 2 and empty_num == 1:
-                # AIがリーチである
-                reach = 1
-                # 空いているマスのインデックスを使う
-                a2 = position[np.where(position_state == 0)[0][0]]
-                if verbose:
-                    print("reach")
-                    print position
-                    print np.where(position_state == 0)
-                    print a2
+            if input_line == 'q':
                 break
+            continue
 
-        if reach == 0:
-            if verbose:
-                print("not reach")
-            # リーチではない場合
-            while(True):
-                # ランダムにチョイス
-                a2 = random.choice(action_list)
-
-                # マスがあいていれば選択完了
-                if state3[a2] == 0:
-                    break
-        state3[a2] = 1
-
-        if verbose:
-            utils.print_state3(state3)
+        if type_of_fight == 1:
+            game = Game(Player(Mark(Maru())), com_2)
+        elif type_of_fight == 2:
+            game = Game(com_1, Player(Mark(Batsu())))
+        elif type_of_fight == 3:
+            game = Game(com_1, com_2)
+        game.start(True)
 
 
-        fin = game_check_state3(state3)
-        if fin == 1:
-            reward = -10.0
-            return action, reward, state3, fin
-        elif fin == 3:
-            reward = 0.0
-            return action, reward, state3, fin
+if __name__ == '__main__':
+    argvs = sys.argv
+    argc = len(argvs)
+    if argc < 2:
+        print("[Usage]%s <option (0: train com, 1: only human, 2: human vs com)>")
+        sys.exit(1)
+    option = int(argvs[1])
 
-        reward = 0.0
-        return action, reward, state3, fin
+    if option == 0:
+        print("Start train...")
+        train()
+
+    elif option == 1:
+        print("Start Game...")
+        player1 = Player(Mark(Maru()))
+        player2 = Player(Mark(Batsu()))
+        game = Game(player1, player2)
+        game.start(verbose=True)
+    elif option == 2:
+        pass
+
+    else:
+        print("[Usage]%s <option (0: train com, 1: only human, 2: human vs com)>")
