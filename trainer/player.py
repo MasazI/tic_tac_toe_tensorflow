@@ -22,5 +22,5 @@ class Player:
             if int(input_line) in actions:
                 return int(input_line)
 
-    def learn(self, reward, state=None, action=None, next_state=None):
+    def learn(self, reward, state=None, next_state=None, finish=False):
         pass

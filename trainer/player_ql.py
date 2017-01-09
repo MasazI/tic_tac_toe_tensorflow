@@ -42,9 +42,12 @@ class QLearningPlayer(Player):
                 after_state_input = np.asmatrix(np.hstack((mark_int, after_state.to_array())))
 
                 print("update using previous_reward: %d %d" % (self.previous_reward, self.mark.to_int()))
+                print("privious state =============")
                 print self.previous_after_state.output()
-                #print state.output()
-                #print after_state.output()
+                print("current state ==============")
+                print state.output()
+                print("after state ================")
+                print after_state.output()
                 print("-"*20)
 
                 self.policy.update_q(previous_after_state_input, self.previous_reward, after_state_input)
@@ -68,6 +71,11 @@ class QLearningPlayer(Player):
                 next_state_input = np.asmatrix(np.hstack((mark_int, next_state.to_array())))
             else:
                 next_state_input = next_state
+
+            print("Finish!!! update using reward: %d %d" % (reward, self.mark.to_int()))
+            print("privious after state =============")
+            print self.previous_after_state.output()
+            print("-" * 20)
 
             self.policy.update_q(previous_after_state_input, reward, next_state_input)
             self.previous_reward = None

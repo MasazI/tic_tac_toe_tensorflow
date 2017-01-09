@@ -30,9 +30,10 @@ def train():
     com_1 = QLearningPlayer(Mark(Maru()), policy_1, True)
     com_2 = QLearningPlayer(Mark(Batsu()), policy_2, True)
 
-    iterations = 1000000
+    iterations = 1000
 
     for i in xrange(iterations):
+        print("Game No.%d *******************************************" % i)
         game = Game(com_1, com_2)
         # print("[%d]" % (i))
         # print("="*30)
@@ -66,7 +67,7 @@ def train():
             game = Game(com_1, Player(Mark(Batsu())))
         elif type_of_fight == 3:
             game = Game(com_1, com_2)
-        game.start(True)
+        game.start(verbose=True, step=0)
 
 
 if __name__ == '__main__':
@@ -75,7 +76,11 @@ if __name__ == '__main__':
     if argc < 2:
         print("[Usage]%s <option (0: train com, 1: only human, 2: human vs com)>")
         sys.exit(1)
-    option = int(argvs[1])
+    try:
+        option = int(argvs[1])
+    except Exception as e:
+        print("[Usage]%s <option (0: train com, 1: only human, 2: human vs com)>")
+        sys.exit(1)
 
     if option == 0:
         print("Start train...")
@@ -86,7 +91,7 @@ if __name__ == '__main__':
         player1 = Player(Mark(Maru()))
         player2 = Player(Mark(Batsu()))
         game = Game(player1, player2)
-        game.start(verbose=True)
+        game.start(verbose=True, step=0)
     elif option == 2:
         pass
 

@@ -57,7 +57,7 @@ class QLearningDecisionPolicy(DecisionPolicy):
             self.saver.restore(self.sess, ckpt.model_checkpoint_path)
 
     def select_action(self, current_state, step, valid_actions=None):
-        threshold = min(self.epsilon, step/1000000.)
+        threshold = min(self.epsilon, step/1000.)
 
         print valid_actions
 
@@ -80,20 +80,29 @@ class QLearningDecisionPolicy(DecisionPolicy):
         return action
 
     def update_q(self, state, reward, next_state):
-        # Q(s, a)
-        action_q_vals = self.sess.run(self.q, feed_dict={self.x: state})
-        # Q(s', a')
-        next_action_q_vals = self.sess.run(self.q, feed_dict={self.x: next_state})
-        # a' index
-        next_action_idx = np.argmax(next_action_q_vals)
-        # create target
-        action_q_vals[0, next_action_idx] = reward + self.gamma * next_action_q_vals[0, next_action_idx]
+        if next_state is not None:
+            # Q(s, a)
+            action_q_vals = self.sess.run(self.q, feed_dict={self.x: state})
+            # Q(s', a')
+            next_action_q_vals = self.sess.run(self.q, feed_dict={self.x: next_state})
+            # a' index
+            next_action_idx = np.argmax(next_action_q_vals)
+            # create target
+            action_q_vals[0, next_action_idx] = reward + self.gamma * next_action_q_vals[0, next_action_idx]
 
-        # delete minibatch dim
-        action_q_vals = np.squeeze(np.asarray(action_q_vals))
+            # delete minibatch dim
+            action_q_vals = np.squeeze(np.asarray(action_q_vals))
 
-        # train
-        self.sess.run(self.train_op, feed_dict={self.x: state, self.y: action_q_vals})
+            # train
+            self.sess.run(self.train_op, feed_dict={self.x: state, self.y: action_q_vals})
+        else:
+            # Q(s, a)
+            action_q_vals = self.sess.run(self.q, feed_dict={self.x: state})
+            action_q_vals[0, :] = reward
+            action_q_vals = np.squeeze(np.asarray(action_q_vals))
+            # train
+            self.sess.run(self.train_op, feed_dict={self.x: state, self.y: action_q_vals})
+
 
     def save_model(self, output_dir, step):
         if not gfile.Exists(output_dir):

@@ -49,9 +49,9 @@ class Game:
             if state.is_win(self.players[current_player_mark].mark):
                 result = self.players[current_player_mark].mark
                 # 勝者の報酬
-                current_player.learn(1, True)
+                current_player.learn(1, finish=True)
                 # 敗者の報酬
-                self.players[result.opponent().to_int()].learn(-1, True)
+                self.players[result.opponent().to_int()].learn(-1, finish=True)
                 if verbose:
                     print("%s" % (state.to_array()))
                     print("-"*5)
@@ -62,7 +62,7 @@ class Game:
             elif state.is_draw():
                 result = Mark(Empty())
                 for player in self.players.itervalues():
-                    player.learn(0, True)
+                    player.learn(0, finish=True)
                 if verbose:
                     state.output()
                     print("draw.")
