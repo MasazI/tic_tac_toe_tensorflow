@@ -63,22 +63,28 @@ class QLearningPlayer(Player):
         return action
 
     def learn(self, reward, state=None, next_state=None, finish=False):
-        if finish:
-            mark_int = self.mark.to_int()
-            previous_after_state_input = np.asmatrix(np.hstack((mark_int, self.previous_after_state.to_array())))
+        if self.training:
+            if finish:
+                if state is not None:
+                    print("change previous after state")
+                    # 負けた場合、勝敗が決定した時点でのstateに更新してから敗者のQ(s,a)を更新する
+                    self.previous_after_state = state
 
-            if next_state is not None:
-                next_state_input = np.asmatrix(np.hstack((mark_int, next_state.to_array())))
+                mark_int = self.mark.to_int()
+                previous_after_state_input = np.asmatrix(np.hstack((mark_int, self.previous_after_state.to_array())))
+
+                if next_state is not None:
+                    next_state_input = np.asmatrix(np.hstack((mark_int, next_state.to_array())))
+                else:
+                    next_state_input = next_state
+
+                print("Finish!!! update using reward: %d %d" % (reward, self.mark.to_int()))
+                print("privious after state =============")
+                print self.previous_after_state.output()
+                print("-" * 20)
+
+                self.policy.update_q(previous_after_state_input, reward, next_state_input)
+                self.previous_reward = None
+                self.previous_after_state = None
             else:
-                next_state_input = next_state
-
-            print("Finish!!! update using reward: %d %d" % (reward, self.mark.to_int()))
-            print("privious after state =============")
-            print self.previous_after_state.output()
-            print("-" * 20)
-
-            self.policy.update_q(previous_after_state_input, reward, next_state_input)
-            self.previous_reward = None
-            self.previous_after_state = None
-        else:
-            self.previous_reward = reward
+                self.previous_reward = reward

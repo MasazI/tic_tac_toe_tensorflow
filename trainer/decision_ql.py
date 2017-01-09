@@ -6,7 +6,6 @@ from model import mlp
 import random
 from tensorflow.python.platform import gfile
 
-
 class QLearningDecisionPolicy(DecisionPolicy):
     def __init__(self, actions, input_dim, model_dir, scope_name="mlp0"):
         '''
@@ -57,7 +56,7 @@ class QLearningDecisionPolicy(DecisionPolicy):
             self.saver.restore(self.sess, ckpt.model_checkpoint_path)
 
     def select_action(self, current_state, step, valid_actions=None):
-        threshold = min(self.epsilon, step/1000.)
+        threshold = min(self.epsilon, step/10000.)
 
         print valid_actions
 

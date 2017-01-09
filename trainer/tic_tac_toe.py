@@ -15,6 +15,7 @@ from tic_tac_toe_state import State
 
 from decision_ql import QLearningDecisionPolicy
 
+iterations = 10000
 
 def train():
     state = State()
@@ -29,8 +30,6 @@ def train():
 
     com_1 = QLearningPlayer(Mark(Maru()), policy_1, True)
     com_2 = QLearningPlayer(Mark(Batsu()), policy_2, True)
-
-    iterations = 1000
 
     for i in xrange(iterations):
         print("Game No.%d *******************************************" % i)

@@ -51,7 +51,7 @@ class Game:
                 # 勝者の報酬
                 current_player.learn(1, finish=True)
                 # 敗者の報酬
-                self.players[result.opponent().to_int()].learn(-1, finish=True)
+                self.players[result.opponent().to_int()].learn(reward=-1, state=state, finish=True)
                 if verbose:
                     print("%s" % (state.to_array()))
                     print("-"*5)
