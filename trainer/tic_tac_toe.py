@@ -13,9 +13,8 @@ from player_ql import QLearningPlayer
 from tic_tac_toe_game import Game
 from tic_tac_toe_state import State
 
+from decision_ql import iteration_num
 from decision_ql import QLearningDecisionPolicy
-
-iterations = 10000
 
 def train():
     state = State()
@@ -31,7 +30,7 @@ def train():
     com_1 = QLearningPlayer(Mark(Maru()), policy_1, True)
     com_2 = QLearningPlayer(Mark(Batsu()), policy_2, True)
 
-    for i in xrange(iterations):
+    for i in xrange(iteration_num):
         print("Game No.%d *******************************************" % i)
         game = Game(com_1, com_2)
         # print("[%d]" % (i))
@@ -66,7 +65,7 @@ def train():
             game = Game(com_1, Player(Mark(Batsu())))
         elif type_of_fight == 3:
             game = Game(com_1, com_2)
-        game.start(verbose=True, step=0)
+        game.start(verbose=True, step=1000)
 
 
 if __name__ == '__main__':

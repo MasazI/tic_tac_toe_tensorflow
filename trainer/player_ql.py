@@ -25,9 +25,7 @@ class QLearningPlayer(Player):
         state_input = np.asmatrix(np.hstack((mark_int, state.to_array())))
 
         # select action
-        # TODO 行動選択の調整
         valid_actions = state.get_valid_actions()
-
         action = self.policy.select_action(state_input, step, valid_actions=valid_actions)
         selected_action = action
 
@@ -35,22 +33,22 @@ class QLearningPlayer(Player):
             after_state = state.set(action, self.mark)
 
             if (self.previous_reward is not None) and (self.previous_after_state is not None):
-                # TODO 学習
                 mark_int = self.mark.to_int()
                 previous_after_state_input = np.asmatrix(np.hstack((mark_int, self.previous_after_state.to_array())))
                 # create input of neural network
                 after_state_input = np.asmatrix(np.hstack((mark_int, after_state.to_array())))
 
                 print("update using previous_reward: %d %d" % (self.previous_reward, self.mark.to_int()))
-                print("privious state =============")
+                print("mark: %s" % (self.mark.to_string()))
+                print("privious state =====")
                 print self.previous_after_state.output()
-                print("current state ==============")
+                print("current state ======")
                 print state.output()
-                print("after state ================")
+                print("after state ========")
                 print after_state.output()
                 print("-"*20)
 
-                self.policy.update_q(previous_after_state_input, self.previous_reward, after_state_input)
+                self.policy.update_q(previous_after_state_input, self.previous_reward, after_state_input, valid_actions=valid_actions)
             else:
                 pass
 
@@ -67,8 +65,8 @@ class QLearningPlayer(Player):
             if finish:
                 if state is not None:
                     print("change previous after state")
-                    # 負けた場合、勝敗が決定した時点でのstateに更新してから敗者のQ(s,a)を更新する
-                    self.previous_after_state = state
+                    # 負け、もしくは引き分けの場合、勝敗が決定した時点でのstateに更新してから敗者のQ(s,a)を更新する
+                    #self.previous_after_state = state
 
                 mark_int = self.mark.to_int()
                 previous_after_state_input = np.asmatrix(np.hstack((mark_int, self.previous_after_state.to_array())))
@@ -81,6 +79,8 @@ class QLearningPlayer(Player):
                 print("Finish!!! update using reward: %d %d" % (reward, self.mark.to_int()))
                 print("privious after state =============")
                 print self.previous_after_state.output()
+                print("next state input.")
+                print next_state_input
                 print("-" * 20)
 
                 self.policy.update_q(previous_after_state_input, reward, next_state_input)

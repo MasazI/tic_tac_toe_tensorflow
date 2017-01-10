@@ -31,10 +31,9 @@ class Game:
         current_player_mark = 1
         result = None
         while(True):
-            #print("="*30)
+            print("*"*50)
             current_player = self.players[current_player_mark]
             if verbose:
-                print("%s" % (state.to_array()))
                 print state.output()
                 print("-"*5)
             # プレイヤーの行動の選択
@@ -62,7 +61,7 @@ class Game:
             elif state.is_draw():
                 result = Mark(Empty())
                 for player in self.players.itervalues():
-                    player.learn(0, finish=True)
+                    player.learn(0, state=state, finish=True)
                 if verbose:
                     state.output()
                     print("draw.")

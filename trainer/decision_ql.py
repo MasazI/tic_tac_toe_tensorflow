@@ -6,6 +6,8 @@ from model import mlp
 import random
 from tensorflow.python.platform import gfile
 
+iteration_num = 10000
+
 class QLearningDecisionPolicy(DecisionPolicy):
     def __init__(self, actions, input_dim, model_dir, scope_name="mlp0"):
         '''
@@ -13,12 +15,14 @@ class QLearningDecisionPolicy(DecisionPolicy):
         :param input_dim: NNの入力次元
         :param model_dir: モデル保存ディレクトリ
         '''
+        # q-learning rate
+        self.qlr = 0.1
         # select action function hyper-parameters
         self.epsilon = 0.9
         # q functins hyper-parameters
-        self.gamma = 0.01
+        self.gamma = 0.99
         # neural network hyper-parmetrs
-        self.lr = 0.001
+        self.lr = 0.01
 
         self.actions = actions
         output_dim = len(actions)
@@ -40,7 +44,8 @@ class QLearningDecisionPolicy(DecisionPolicy):
         self.train_op = tf.train.AdamOptimizer(self.lr).minimize(loss)
 
         # session
-        self.sess = tf.Session()
+        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.1)
+        self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
 
         # initalize
         init_op = tf.initialize_all_variables()
@@ -56,39 +61,56 @@ class QLearningDecisionPolicy(DecisionPolicy):
             self.saver.restore(self.sess, ckpt.model_checkpoint_path)
 
     def select_action(self, current_state, step, valid_actions=None):
-        threshold = min(self.epsilon, step/10000.)
+        threshold = min(self.epsilon, step/float(iteration_num))
 
         print valid_actions
+        print("threshold: %f" % (threshold))
+        rand = random.random()
+        print("rand: %f" % (rand))
 
-        print threshold
-
-        if random.random() < threshold:
+        if rand > threshold:
+            # random choice
+            print("random choice.")
+            action = valid_actions[random.randint(0, len(valid_actions) - 1)]
+        else:
+            print("decision from Q function.")
             action_q_vals = self.sess.run(self.q, feed_dict={self.x: current_state})
-            action_idx = np.argmax(action_q_vals)
 
             print action_q_vals
-
+            #condition of valid_actions
+            ind = np.ones(action_q_vals[0].shape, dtype=bool)
+            ind[valid_actions] = False
+            action_q_vals[0][ind] = 0.0
+            action_idx = np.argmax(action_q_vals[0])
             if action_idx in valid_actions:
                 action = self.actions[action_idx]
             else:
+
                 action = valid_actions[random.randint(0, len(valid_actions) - 1)]
-        else:
-            # random choice
-            action = valid_actions[random.randint(0, len(valid_actions)-1)]
 
         return action
 
-    def update_q(self, state, reward, next_state):
+    def update_q(self, state, reward, next_state, valid_actions=None):
         if next_state is not None:
             # Q(s, a)
             action_q_vals = self.sess.run(self.q, feed_dict={self.x: state})
             # Q(s', a')
             next_action_q_vals = self.sess.run(self.q, feed_dict={self.x: next_state})
-            # a' index
-            next_action_idx = np.argmax(next_action_q_vals)
-            # create target
-            action_q_vals[0, next_action_idx] = reward + self.gamma * next_action_q_vals[0, next_action_idx]
 
+            # a' index with condition of valid actions
+            # ind = np.ones(next_action_q_vals[0].shape, dtype=bool)
+            # ind[valid_actions] = False
+            # next_action_q_vals[0][ind] = 0.0
+            # next_action_idx = np.argmax(next_action_q_vals[0])
+
+            # a' index
+            # next_action_idx = np.argmax(next_action_q_vals[0])
+
+            # create target
+            # action_q_vals[0, next_action_idx] += self.qlr*(reward +
+            #                                               self.gamma * next_action_q_vals[0, next_action_idx] -
+            #                                               action_q_vals[0, next_action_idx])
+            action_q_vals[0] += self.qlr*(reward + self.gamma * next_action_q_vals[0] - action_q_vals[0])
             # delete minibatch dim
             action_q_vals = np.squeeze(np.asarray(action_q_vals))
 
@@ -97,7 +119,8 @@ class QLearningDecisionPolicy(DecisionPolicy):
         else:
             # Q(s, a)
             action_q_vals = self.sess.run(self.q, feed_dict={self.x: state})
-            action_q_vals[0, :] = reward
+            action_q_vals[0] += self.qlr * (reward - action_q_vals[0])
+            # delete minibatch dim
             action_q_vals = np.squeeze(np.asarray(action_q_vals))
             # train
             self.sess.run(self.train_op, feed_dict={self.x: state, self.y: action_q_vals})
