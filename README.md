@@ -1,5 +1,5 @@
 # tic_tac_toe_tensorflow
-tic_tac_toe_tensorflow is an implementation of tic tac toe game using Nural Q-learning in TensorFlow.
+tic_tac_toe_tensorflow is an implementation of tic tac toe game using Neural Q-learning in TensorFlow.
 
 # requierments
 - TensorFlow(0.12.0+)
